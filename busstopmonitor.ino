@@ -97,42 +97,7 @@ void loop()
 
         
         for (int n = 0; n < NUMBER_OF_BUSSTOPS; n++)
-        {
-            /*
-            ///////////////
-            String url2 = "http://datamall2.mytransport.sg/ltaodataservice/BusStops";
-           
-            if (http.begin(client, url2))
-            {        
-                http.setTimeout(5000);
-                http.addHeader("AccountKey", "oFLLgrEUQwOQ/c2ZX4BghA==");
-
-                int httpCode = http.GET();
-
-                // httpCode will be negative on error
-                if (httpCode > 0)
-                {
-                    // file found at server
-                    if (httpCode == HTTP_CODE_OK ||
-                        httpCode == HTTP_CODE_MOVED_PERMANENTLY)
-                    {                            
-                        String payload = http.getString();
-                        Serial.println("SUCCESS");                         
-                        Serial.println(payload);                         
-                    }
-                }
-                else 
-                {
-                    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-                }
-            }
-            else 
-            {
-                Serial.printf("[HTTP} Unable to connect\n");
-            }
-            */
-            ///////////////
-            
+        {           
             String url = "http://datamall2.mytransport.sg/ltaodataservice/BusArrivalv2?BusStopCode=" + busstopList.busstops[n].id;
            
             if (http.begin(client, url))
@@ -255,7 +220,7 @@ void PrintFrame(BusstopList &busstopList)
         for (int n = 0; busstopList.busstops[x].listOfBusses[n].busNo != ""; n++)
         {
             tft.setTextSize(1);
-            tft.setCursor(10, 40 + 12 * n);
+            tft.setCursor(5, 40 + 12 * n);
             tft.setTextColor(0xEEEE);
             tft.println(busstopList.busstops[x].listOfBusses[n].busNo);
             
@@ -278,7 +243,7 @@ void PrintFrame(BusstopList &busstopList)
 void PrintTime(String currentDate)
 {
     tft.setTextSize(1);
-    tft.setCursor(100, 0);
+    tft.setCursor(97, 0);
     tft.setTextColor(0xDDDD);
     tft.println(currentDate.substring(0,5));   
 }
