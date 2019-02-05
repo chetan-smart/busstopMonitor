@@ -17,9 +17,9 @@
 #include <Adafruit_ST7735.h>
 #include <SPI.h>
 
-#define TFT_RST D0
-#define TFT_CS  D1
-#define TFT_DC  D2
+#define TFT_RST 16 //D0
+#define TFT_CS  5  //D1
+#define TFT_DC  4  //D2
 
 int offset = 8 * 60 * 60;
 
@@ -30,20 +30,22 @@ NTPClient timeClient(ntpUDP, "sg.pool.ntp.org", offset, 60000);
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 const int NUMBER_OF_BUSSES   = 40;
-const int NUMBER_OF_BUSSTOPS = 1;
+const int NUMBER_OF_BUSSTOPS = 4;
 const int NUMBER_OF_TIMES    = 3;
 
 class BusInfo
 {
    public:
      String busNo;
-     int    arrival[NUMBER_OF_TIMES];
+     String arrival[NUMBER_OF_TIMES];
 };
 
 class Busstop
 {
   public:
     String id;
+    String description;
+    String roadName;
     BusInfo listOfBusses[NUMBER_OF_BUSSES];
 };
 
@@ -53,13 +55,14 @@ class BusstopList
     Busstop busstops[NUMBER_OF_BUSSTOPS];
 };
 
+BusstopList busstopList;
 
 void setup() 
 {
     Serial.begin(115200);
   
     WiFi.mode(WIFI_STA);
-    WiFiMulti.addAP("Goofydancers", "thisishappening!");
+    WiFiMulti.addAP("XXX", "YYY");
   
     timeClient.begin();
   
@@ -69,31 +72,68 @@ void setup()
 }
 
 void loop()
-{  
+{    
     // wait for WiFi connection
     if ((WiFiMulti.run() == WL_CONNECTED)) 
     {
         WiFiClient client;
         HTTPClient http;
 
-        //BusstopList theList;
+        busstopList.busstops[0].id = "10181";
+        busstopList.busstops[1].id = "10189";
+        busstopList.busstops[2].id = "10359";
+        busstopList.busstops[3].id = "10351";
 
-        Busstop busstop1;
-        busstop1.id = "10181";
 
-        Busstop busstop2;
+        busstopList.busstops[0].description = "BEF AR-RABITAH MQUE";
+        busstopList.busstops[1].description = "Blk 104A CP";
+        busstopList.busstops[2].description = "Aft Tiong Bahru Rd";
+        busstopList.busstops[3].description = "Bef Tiong Bahru Rd";
 
-        //theList.busstops[1].id = "";
-        //theList.busstops[1].id = "10189";
-        //theList.busstops[2].id = "10359";
-        //theList.busstops[3].id = "10351";
+        busstopList.busstops[0].roadName = "Tiong Bahru Rd";
+        busstopList.busstops[1].roadName = "Tiong Bahru Rd";
+        busstopList.busstops[2].roadName = "Henderson Rd";
+        busstopList.busstops[3].roadName = "Henderson Rd";
 
-        //Serial.print("sizeof(theList) ");
-        //Serial.println(sizeof(theList));
-
-        for (int n = 0; n < 1 /* NUMBER_OF_BUSSTOPS && theList.busstops[n].id != ""*/; n++)
+        
+        for (int n = 0; n < NUMBER_OF_BUSSTOPS; n++)
         {
-            String url = "http://datamall2.mytransport.sg/ltaodataservice/BusArrivalv2?BusStopCode=" + busstop1.id;
+            /*
+            ///////////////
+            String url2 = "http://datamall2.mytransport.sg/ltaodataservice/BusStops";
+           
+            if (http.begin(client, url2))
+            {        
+                http.setTimeout(5000);
+                http.addHeader("AccountKey", "oFLLgrEUQwOQ/c2ZX4BghA==");
+
+                int httpCode = http.GET();
+
+                // httpCode will be negative on error
+                if (httpCode > 0)
+                {
+                    // file found at server
+                    if (httpCode == HTTP_CODE_OK ||
+                        httpCode == HTTP_CODE_MOVED_PERMANENTLY)
+                    {                            
+                        String payload = http.getString();
+                        Serial.println("SUCCESS");                         
+                        Serial.println(payload);                         
+                    }
+                }
+                else 
+                {
+                    Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+                }
+            }
+            else 
+            {
+                Serial.printf("[HTTP} Unable to connect\n");
+            }
+            */
+            ///////////////
+            
+            String url = "http://datamall2.mytransport.sg/ltaodataservice/BusArrivalv2?BusStopCode=" + busstopList.busstops[n].id;
            
             if (http.begin(client, url))
             {        
@@ -111,8 +151,7 @@ void loop()
                     {
                         timeClient.update();
                         String currentDate = timeClient.getFormattedTime();
-                        PrintTime(currentDate);
-    
+                            
                         String payload = http.getString();
                         Serial.println(payload);
               
@@ -127,7 +166,7 @@ void loop()
                             Serial.print(" Bus: ");
                             Serial.print(busNo);
                           
-                            busstop1.listOfBusses[m].busNo = busNo;
+                            busstopList.busstops[n].listOfBusses[m].busNo = busNo;
                 
                             if (pos == -1)
                                 break;
@@ -143,14 +182,14 @@ void loop()
                                 if(pos == -1)
                                   break;
                           
-                                int minutes;
+                                String minutes;
 
                                 if(arrivalTime != "NA")
                                     minutes = SubtractDates(currentDate, arrivalTime);
                                 else
-                                    minutes = 999;  
+                                    minutes = "NA";  
 
-                                busstop1.listOfBusses[m].arrival[p] = minutes;
+                                busstopList.busstops[n].listOfBusses[m].arrival[p] = minutes;
 
                                 Serial.print(" Arrival: ");
                                 Serial.print(arrivalTime);
@@ -177,55 +216,69 @@ void loop()
             {
                 Serial.printf("[HTTP} Unable to connect\n");
             }
+            
         }
 
-        PrintFrame(busstop1);
+        PrintFrame(busstopList);
     }
+    
 }
 
-void PrintFrame(Busstop &busstop1)
+void PrintFrame(BusstopList &busstopList)
 {
     bool validData = false;
 
-    for (int x = 0; x < 1/*NUMBER_OF_BUSSTOPS && bsl.busstops[x].id != ""*/; x++)
+    for (int x = 0; x < NUMBER_OF_BUSSTOPS; x++)
     {
         tft.fillScreen(0x0000);
 
+        timeClient.update();
+        String currentDate = timeClient.getFormattedTime();
+        PrintTime(currentDate);
+
         tft.setTextSize(2);
-        tft.setCursor(5, 5);
+        tft.setCursor(0, 0);
         tft.setTextColor(0xDDDD);
-        tft.println(busstop1.id);
+        tft.println(busstopList.busstops[x].id);
+
+        tft.setTextSize(1);
+        tft.setCursor(0, 18);
+        tft.setTextColor(0xDDDD);
+        tft.println(busstopList.busstops[x].description);
+
+        tft.setTextSize(1);
+        tft.setCursor(0, 28);
+        tft.setTextColor(0xDDDD);
+        tft.println(busstopList.busstops[x].roadName);
+
         
-        for (int n = 0; busstop1.listOfBusses[n].busNo != ""; n++)
+        for (int n = 0; busstopList.busstops[x].listOfBusses[n].busNo != ""; n++)
         {
             tft.setTextSize(1);
             tft.setCursor(10, 40 + 12 * n);
             tft.setTextColor(0xEEEE);
-            tft.println(busstop1.listOfBusses[n].busNo);
+            tft.println(busstopList.busstops[x].listOfBusses[n].busNo);
             
             for (int m = 0; m < NUMBER_OF_TIMES; m++)
             {
                 tft.setTextSize(1);
                 tft.setCursor(40 + m * 30, 40 + 12 * n);
                 tft.setTextColor(0xDDDD);
-                tft.println(busstop1.listOfBusses[n].arrival[m]);
+                tft.println(busstopList.busstops[x].listOfBusses[n].arrival[m]);
 
                 validData = true;
             }
         }
 
-        delay(60000);
+        delay(6000);
     }
-
-    timeClient.update();
-    String currentDate = timeClient.getFormattedTime();
-    PrintTime(currentDate);
 }
+
 
 void PrintTime(String currentDate)
 {
     tft.setTextSize(1);
-    tft.setCursor(95, 5);
+    tft.setCursor(100, 0);
     tft.setTextColor(0xDDDD);
     tft.println(currentDate.substring(0,5));   
 }
